@@ -1,6 +1,8 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
 import { connectDB, getIsConnected } from './db';
 import { Item, IItem, ItemStatus, RecordKind } from './models/Item';
 import { SAMPLE_ITEMS } from './sampleData';
@@ -308,6 +310,18 @@ app.post('/api/seed', async (_req: Request, res: Response) => {
     return res.status(500).json({ error: 'Failed to seed sample items', details: message });
   }
 });
+
+// Serve frontend static files if built (Production deployment)
+const distPath = path.resolve(process.cwd(), 'dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get('*', (req: Request, res: Response, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
 
 // Start Server and Connect DB
 connectDB().finally(() => {
