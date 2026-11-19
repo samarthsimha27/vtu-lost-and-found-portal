@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Fraunces", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-vtu-saffron: #DF6A18;
+  --color-vtu-saffron-deep: #B8520D;
+  --color-vtu-saffron-soft: #FDF3EB;
+  --color-vtu-green: #146B32;
+  --color-vtu-green-deep: #0E4F24;
+  --color-vtu-green-soft: #EDF6F0;
+  --color-canvas: #FAF8F5;
+  --color-surface: #FFFFFF;
+  --color-surface-subtle: #F3EFE9;
+  --color-border-hairline: #E5DFD6;
+  --color-ink: #191816;
+  --color-ink-muted: #625D55;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}

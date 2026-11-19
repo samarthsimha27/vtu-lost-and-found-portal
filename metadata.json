@@ -1,0 +1,6 @@
+{
+  "name": "VTU Campus Lost & Found",
+  "description": "A humanized campus lost and found community platform for Visvesvaraya Technological University (VTU), Belagavi, featuring an interactive fluid particle VTU emblem hero and verified student item recovery.",
+  "requestFramePermissions": ["camera", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
