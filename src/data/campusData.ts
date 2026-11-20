@@ -34,7 +34,7 @@ export const CAMPUS_LOCATION_DIRECTORY: Record<CampusLocation, CampusLocationRec
   'Girls’ Mess': {
     id: 'loc-girls-mess',
     name: 'Girls’ Mess',
-    defaultCoordinates: { latitude: 15.777189, longitude: 74.463905 }
+    defaultCoordinates: { latitude: 15.776841, longitude: 74.465455 }
   },
   'Administrative Department': {
     id: 'loc-admin-dept',
@@ -64,7 +64,7 @@ export const CAMPUS_LOCATION_DIRECTORY: Record<CampusLocation, CampusLocationRec
   'Vidya Bhavan': {
     id: 'loc-vidya-bhavan',
     name: 'Vidya Bhavan',
-    defaultCoordinates: { latitude: 15.777215, longitude: 74.463901 }
+    defaultCoordinates: { latitude: 15.777818, longitude: 74.465171 }
   }
 };
 
