@@ -34,3 +34,25 @@
     }
   }
 }
+
+/* Leaflet map styles and overrides */
+.leaflet-container {
+  font-family: var(--font-sans);
+}
+
+.leaflet-container img {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #E5DFD6;
+  padding: 4px;
+}
+
+.leaflet-popup-content {
+  margin: 8px 10px;
+  line-height: 1.4;
+}

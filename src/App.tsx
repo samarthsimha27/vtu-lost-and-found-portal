@@ -572,8 +572,22 @@ export default function App() {
               )}
             </main>
 
-            {/* Separate Dedicated Section Reserved for Future Leaflet Map Integration */}
-            <CampusMapSlot markers={mapMarkers} locations={campusLocationList} />
+            {/* Interactive VTU Campus Leaflet Map */}
+            <CampusMapSlot
+              markers={mapMarkers}
+              locations={campusLocationList}
+              onSelectItem={(id) => {
+                const item = [...lostItems, ...findRequests].find((it) => it.id === id);
+                if (item) {
+                  setSelectedItem(item);
+                }
+              }}
+              onSelectLocation={(loc) => {
+                setSelectedLocation(loc);
+                setActiveTab('find');
+                window.scrollTo({ top: 320, behavior: 'smooth' });
+              }}
+            />
 
             {/* Minimal Campus Footer */}
             <footer className="py-6 border-t border-[#E5DFD6] bg-white text-xs text-[#625D55]">
