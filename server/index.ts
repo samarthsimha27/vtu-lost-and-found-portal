@@ -76,7 +76,7 @@ app.post('/api/items', async (req: Request, res: Response) => {
       imageUrl: imageUrl || undefined,
       geotag: geotag || undefined,
       location: String(location).trim(),
-      locationCoordinates: locationCoordinates || { latitude: 15.7788, longitude: 74.4621 },
+      locationCoordinates: locationCoordinates || { latitude: 15.7785, longitude: 74.463 },
       dateLost: String(dateLost).trim(),
       contactName: String(contactName).trim(),
       contactInfo: String(contactInfo).trim(),

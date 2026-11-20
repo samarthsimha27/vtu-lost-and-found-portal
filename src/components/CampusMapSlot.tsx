@@ -3,14 +3,11 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { CampusLocation, CampusLocationRecord, MapMarkerPayload } from '../types';
 import {
-  MapPin,
   Compass,
   RotateCcw,
-  ExternalLink,
-  ShieldCheck,
-  Building2,
-  Package,
-  Search
+  Layers,
+  Map as MapIcon,
+  Globe
 } from 'lucide-react';
 
 export interface CampusMapSlotProps {
@@ -23,17 +20,34 @@ export interface CampusMapSlotProps {
 }
 
 type MapFilterMode = 'all' | 'landmarks' | 'found' | 'lost';
+type MapTileType = 'street' | 'satellite';
+
+// Contextual building subtitles for VTU Belagavi campus buildings
+const BUILDING_DESCRIPTIONS: Partial<Record<CampusLocation, string>> = {
+  'Administrative Department': 'Central Administrative Office & SBI Branch',
+  'Vidya Bhavan': 'Central Academic Complex, Auditorium & Library',
+  'Regional Office / CUE Department': 'Central Examination & Evaluation Wing',
+  'Mechanical and MEA Department': 'PG Studies & Mechanical Engineering Center',
+  'Sports Complex': 'Indoor Sports Complex & Gymnasium',
+  'Basketball Court': 'Outdoor Basketball & Tennis Pitch',
+  Ground: 'University Athletic Field & Sports Pavilion',
+  'Boys’ Mess': 'Boys’ Hostels 1 & 2 Central Dining Hall',
+  'Girls’ Mess': 'Girls’ Hostel Wing & Dining Block',
+  'Kateel Canteen': 'Student Food Court & Refreshments Hub',
+  'Xerox Shop': 'Student Utility, Printing & Stationery Center'
+};
 
 export const CampusMapSlot: React.FC<CampusMapSlotProps> = ({
   markers,
   locations,
-  center = { latitude: 15.7788, longitude: 74.4621 },
+  center = { latitude: 15.7785, longitude: 74.463 },
   zoom = 17,
   onSelectItem,
   onSelectLocation
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const activeTileLayerRef = useRef<L.TileLayer | null>(null);
   const layersRef = useRef<{
     landmarks: L.LayerGroup;
     found: L.LayerGroup;
@@ -45,17 +59,16 @@ export const CampusMapSlot: React.FC<CampusMapSlotProps> = ({
   });
 
   const [filterMode, setFilterMode] = useState<MapFilterMode>('all');
-  const [activeItemCount, setActiveItemCount] = useState(markers.length);
+  const [mapTileType, setMapTileType] = useState<MapTileType>('street');
 
   const geotaggedCount = markers.filter((m) => m.hasExactGeotag).length;
   const foundCount = markers.filter((m) => m.kind === 'found_report').length;
   const lostCount = markers.filter((m) => m.kind !== 'found_report').length;
 
-  // Initialize Map Instance
+  // Initialize Leaflet Map Instance
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    // Prevent duplicate map initialization
     if (mapInstanceRef.current) {
       mapInstanceRef.current.remove();
       mapInstanceRef.current = null;
@@ -68,12 +81,15 @@ export const CampusMapSlot: React.FC<CampusMapSlotProps> = ({
       zoomControl: true
     });
 
-    // Add high-resolution OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Default tile layer (Street Map)
+    const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors · VTU Belagavi'
-    }).addTo(map);
+        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> · VTU Jnana Sangama'
+    });
+
+    streetLayer.addTo(map);
+    activeTileLayerRef.current = streetLayer;
 
     // Initialize layer groups and add them to map
     const landmarksGroup = L.layerGroup().addTo(map);
@@ -94,35 +110,107 @@ export const CampusMapSlot: React.FC<CampusMapSlotProps> = ({
     };
   }, [center.latitude, center.longitude, zoom]);
 
-  // Update Markers when data or filters change
+  // Handle Tile Layer Switch (Street vs Satellite Imagery)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (activeTileLayerRef.current) {
+      map.removeLayer(activeTileLayerRef.current);
+    }
+
+    let newTileLayer: L.TileLayer;
+    if (mapTileType === 'satellite') {
+      newTileLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+          maxZoom: 19,
+          attribution: 'Imagery &copy; Esri, Maxar, Earthstar Geographics · VTU Belagavi'
+        }
+      );
+    } else {
+      newTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> · VTU Jnana Sangama'
+      });
+    }
+
+    newTileLayer.addTo(map);
+    activeTileLayerRef.current = newTileLayer;
+  }, [mapTileType]);
+
+  // Update Markers when data, filter, or callbacks change
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
     const { landmarks: landmarksGroup, found: foundGroup, lost: lostGroup } = layersRef.current;
 
-    // Clear previous markers
     landmarksGroup.clearLayers();
     foundGroup.clearLayers();
     lostGroup.clearLayers();
 
-    // 1. Plot Campus Landmarks
+    // 0. Landmark: Main Campus Gate / Sir M Visvesvaraya Circle Reference Marker
+    const gateIcon = L.divIcon({
+      className: 'custom-gate-marker',
+      html: `
+        <div style="
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          background: #B45309;
+          color: #FFF;
+          padding: 4px 9px;
+          border-radius: 9999px;
+          font-size: 10px;
+          font-weight: 700;
+          box-shadow: 0 4px 12px rgba(180,83,9,0.4);
+          border: 2px solid #FFF;
+          white-space: nowrap;
+          cursor: pointer;
+        ">
+          <span>🏛️</span>
+          <span>Main Gate & Statue</span>
+        </div>
+      `,
+      iconSize: [120, 26],
+      iconAnchor: [60, 13],
+      popupAnchor: [0, -14]
+    });
+
+    const gateMarker = L.marker([15.779815, 74.463841], { icon: gateIcon });
+    gateMarker.bindPopup(`
+      <div style="font-family: inherit; padding: 4px;">
+        <div style="font-size: 10px; font-weight: 700; color: #B45309; text-transform: uppercase;">Campus Entrance</div>
+        <div style="font-size: 13px; font-weight: 700; color: #191816; margin-top: 2px;">Sir M. Visvesvaraya Circle & Main Gate</div>
+        <div style="font-size: 11px; color: #625D55; margin-top: 2px;">GPS: 15.7798° N, 74.4638° E</div>
+        <p style="font-size: 11px; color: #374151; margin-top: 4px; line-height: 1.3;">
+          Official entrance to VTU Jnana Sangama Campus facing Jamboti / Machhe Highway.
+        </p>
+      </div>
+    `);
+    landmarksGroup.addLayer(gateMarker);
+
+    // 1. Plot Audited Campus Buildings
     locations.forEach((loc) => {
       const itemsAtLocation = markers.filter((m) => m.locationName === loc.name);
+      const subTitle = BUILDING_DESCRIPTIONS[loc.name] || 'VTU Campus Facility';
+
       const landmarkIcon = L.divIcon({
         className: 'custom-landmark-marker',
         html: `
           <div style="
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             background: #0F172A;
             color: #FFFFFF;
             padding: 5px 10px;
             border-radius: 9999px;
             font-size: 11px;
             font-weight: 600;
-            box-shadow: 0 4px 12px rgba(15,23,42,0.3);
+            box-shadow: 0 4px 14px rgba(15,23,42,0.35);
             border: 2px solid #FFFFFF;
             white-space: nowrap;
             cursor: pointer;
@@ -155,29 +243,29 @@ export const CampusMapSlot: React.FC<CampusMapSlotProps> = ({
         icon: landmarkIcon
       });
 
-      // Construct interactive popup element
       const popupDiv = document.createElement('div');
       popupDiv.className = 'p-1 font-sans text-[#191816]';
       popupDiv.innerHTML = `
         <div style="margin-bottom: 6px;">
-          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #625D55; font-weight: 700;">Campus Landmark</div>
+          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #625D55; font-weight: 700;">Verified Campus Landmark</div>
           <div style="font-size: 14px; font-weight: 700; color: #0F172A; margin-top: 2px;">${loc.name}</div>
-          <div style="font-size: 11px; color: #625D55; margin-top: 2px;">
-            GPS: ${loc.defaultCoordinates.latitude.toFixed(4)}°N, ${loc.defaultCoordinates.longitude.toFixed(4)}°E
+          <div style="font-size: 11px; color: #4B5563; margin-top: 1px;">${subTitle}</div>
+          <div style="font-size: 10px; color: #625D55; margin-top: 3px; font-family: monospace;">
+            Exact GPS: ${loc.defaultCoordinates.latitude.toFixed(6)}° N, ${loc.defaultCoordinates.longitude.toFixed(6)}° E
           </div>
         </div>
         <div style="font-size: 12px; color: #374151; padding: 6px 8px; background: #F3EFE9; border-radius: 6px; margin-bottom: 8px;">
           ${
             itemsAtLocation.length > 0
-              ? `<strong>${itemsAtLocation.length}</strong> lost & found item(s) reported here.`
-              : `No active items reported here yet.`
+              ? `<strong>${itemsAtLocation.length}</strong> item report(s) active here.`
+              : `No lost or found items reported here right now.`
           }
         </div>
       `;
 
       if (onSelectLocation) {
         const filterBtn = document.createElement('button');
-        filterBtn.textContent = `View Items at ${loc.name}`;
+        filterBtn.textContent = `Filter Items at ${loc.name}`;
         filterBtn.style.cssText =
           'width: 100%; padding: 6px 10px; background: #146B32; color: #FFF; font-size: 11px; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; text-align: center;';
         filterBtn.onclick = () => {
@@ -187,7 +275,7 @@ export const CampusMapSlot: React.FC<CampusMapSlotProps> = ({
         popupDiv.appendChild(filterBtn);
       }
 
-      marker.bindPopup(popupDiv, { maxWidth: 240 });
+      marker.bindPopup(popupDiv, { maxWidth: 260 });
       landmarksGroup.addLayer(marker);
     });
 
@@ -197,9 +285,8 @@ export const CampusMapSlot: React.FC<CampusMapSlotProps> = ({
       const badgeBg = isFound ? '#146B32' : '#DF6A18';
       const label = isFound ? 'FOUND' : 'LOST';
 
-      // Slight jitter if exact coordinate matches building center so multiple items don't hide each other
-      const latJitter = (Math.random() - 0.5) * 0.00015;
-      const lngJitter = (Math.random() - 0.5) * 0.00015;
+      const latJitter = (Math.random() - 0.5) * 0.00012;
+      const lngJitter = (Math.random() - 0.5) * 0.00012;
       const targetLat = item.hasExactGeotag ? item.coordinates.latitude : item.coordinates.latitude + latJitter;
       const targetLng = item.hasExactGeotag ? item.coordinates.longitude : item.coordinates.longitude + lngJitter;
 
@@ -247,7 +334,6 @@ export const CampusMapSlot: React.FC<CampusMapSlotProps> = ({
 
       const marker = L.marker([targetLat, targetLng], { icon: itemIcon });
 
-      // Construct popup content with details and action button
       const popupDiv = document.createElement('div');
       popupDiv.className = 'font-sans text-[#191816]';
       popupDiv.style.cssText = 'max-width: 220px;';
@@ -325,8 +411,6 @@ export const CampusMapSlot: React.FC<CampusMapSlotProps> = ({
       map.addLayer(foundGroup);
       map.addLayer(lostGroup);
     }
-
-    setActiveItemCount(markers.length);
   }, [markers, locations, filterMode, onSelectItem, onSelectLocation]);
 
   const handleRecenter = () => {
@@ -345,21 +429,54 @@ export const CampusMapSlot: React.FC<CampusMapSlotProps> = ({
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#EDF6F0] text-[#146B32] border border-[#CDE5D5]">
                 <Compass className="w-3.5 h-3.5" />
                 Live GPS Map
               </span>
-              <span className="text-xs text-[#625D55]">Visvesvaraya Technological University, Belagavi</span>
+              <span className="text-xs text-[#625D55]">
+                VTU Jnana Sangama Main Campus · Machhe, Belagavi
+              </span>
             </div>
             <h2 className="font-serif text-xl sm:text-2xl font-semibold text-[#191816]">
               Interactive Campus Recovery Map
             </h2>
           </div>
 
-          {/* Quick Filter Buttons & Recenter */}
+          {/* Quick Filter Buttons & Layer Controls */}
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="inline-flex rounded-lg bg-white border border-[#E5DFD6] p-0.5 text-xs">
+            {/* Street / Satellite Imagery Toggle */}
+            <div className="inline-flex rounded-lg bg-white border border-[#E5DFD6] p-0.5 text-xs shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setMapTileType('street')}
+                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md font-medium transition-colors cursor-pointer ${
+                  mapTileType === 'street'
+                    ? 'bg-[#191816] text-white'
+                    : 'text-[#625D55] hover:text-[#191816]'
+                }`}
+                title="Street map view"
+              >
+                <MapIcon className="w-3 h-3" />
+                <span>Map</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMapTileType('satellite')}
+                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md font-medium transition-colors cursor-pointer ${
+                  mapTileType === 'satellite'
+                    ? 'bg-[#191816] text-white'
+                    : 'text-[#625D55] hover:text-[#191816]'
+                }`}
+                title="Satellite aerial imagery"
+              >
+                <Globe className="w-3 h-3" />
+                <span>Satellite</span>
+              </button>
+            </div>
+
+            {/* Marker Visibility Pills */}
+            <div className="inline-flex rounded-lg bg-white border border-[#E5DFD6] p-0.5 text-xs shadow-2xs">
               <button
                 type="button"
                 onClick={() => setFilterMode('all')}
@@ -406,11 +523,12 @@ export const CampusMapSlot: React.FC<CampusMapSlotProps> = ({
               </button>
             </div>
 
+            {/* Recenter Button */}
             <button
               type="button"
               onClick={handleRecenter}
-              title="Reset view to VTU Campus Center"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#E5DFD6] hover:border-[#C5BCB0] text-[#191816] rounded-lg text-xs font-semibold transition-colors cursor-pointer shadow-xs"
+              title="Recenter map to VTU Campus Center"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#E5DFD6] hover:border-[#C5BCB0] text-[#191816] rounded-lg text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
             >
               <RotateCcw className="w-3.5 h-3.5 text-[#625D55]" />
               <span>Center Campus</span>
@@ -423,7 +541,7 @@ export const CampusMapSlot: React.FC<CampusMapSlotProps> = ({
           <div
             id="vtu-leaflet-map-container"
             ref={mapContainerRef}
-            className="w-full h-[460px] sm:h-[520px] z-0"
+            className="w-full h-[480px] sm:h-[540px] z-0"
             style={{ background: '#E2E8F0' }}
           />
 
@@ -453,9 +571,14 @@ export const CampusMapSlot: React.FC<CampusMapSlotProps> = ({
           </div>
         </div>
 
-        {/* Helpful Footnote */}
-        <p className="mt-2.5 text-xs text-[#625D55] text-center sm:text-left">
-          💡 Click on any building badge or item pin on the map to see reports, photos, and exact coordinates.
+        {/* Footnote with Coordinates Info */}
+        <p className="mt-2.5 text-xs text-[#625D55] text-center sm:text-left flex items-center justify-between gap-2 flex-wrap">
+          <span>
+            💡 Click on any building badge or item pin to see reports, photos, and exact GPS coordinates.
+          </span>
+          <span className="font-mono text-[11px] text-[#78716C]">
+            Verified with OpenStreetMap & Satellite Data · VTU Belagavi
+          </span>
         </p>
       </div>
     </section>
