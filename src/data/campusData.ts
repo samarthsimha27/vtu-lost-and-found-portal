@@ -14,22 +14,22 @@ export const CAMPUS_LOCATION_DIRECTORY: Record<CampusLocation, CampusLocationRec
   'Sports Complex': {
     id: 'loc-sports-complex',
     name: 'Sports Complex',
-    defaultCoordinates: { latitude: 15.779515, longitude: 74.461869 }
+    defaultCoordinates: { latitude: 15.777437, longitude: 74.466948 }
   },
   'Basketball Court': {
     id: 'loc-basketball-court',
     name: 'Basketball Court',
-    defaultCoordinates: { latitude: 15.779581, longitude: 74.461533 }
+    defaultCoordinates: { latitude: 15.776367, longitude: 74.467102 }
   },
   Ground: {
     id: 'loc-ground',
     name: 'Ground',
-    defaultCoordinates: { latitude: 15.780445, longitude: 74.460139 }
+    defaultCoordinates: { latitude: 15.776856, longitude: 74.468067 }
   },
   'Boys’ Mess': {
     id: 'loc-boys-mess',
     name: 'Boys’ Mess',
-    defaultCoordinates: { latitude: 15.778999, longitude: 74.460682 }
+    defaultCoordinates: { latitude: 15.776934, longitude: 74.466126 }
   },
   'Girls’ Mess': {
     id: 'loc-girls-mess',
@@ -39,32 +39,32 @@ export const CAMPUS_LOCATION_DIRECTORY: Record<CampusLocation, CampusLocationRec
   'Administrative Department': {
     id: 'loc-admin-dept',
     name: 'Administrative Department',
-    defaultCoordinates: { latitude: 15.777948, longitude: 74.462541 }
+    defaultCoordinates: { latitude: 15.777652, longitude: 74.463462 }
   },
   'Regional Office / CUE Department': {
     id: 'loc-regional-cue',
     name: 'Regional Office / CUE Department',
-    defaultCoordinates: { latitude: 15.777532, longitude: 74.464599 }
+    defaultCoordinates: { latitude: 15.777799, longitude: 74.464881 }
   },
   'Mechanical and MEA Department': {
     id: 'loc-mech-mea',
     name: 'Mechanical and MEA Department',
-    defaultCoordinates: { latitude: 15.77941, longitude: 74.462423 }
+    defaultCoordinates: { latitude: 15.777822, longitude: 74.464559 }
   },
   'Xerox Shop': {
     id: 'loc-xerox-shop',
     name: 'Xerox Shop',
-    defaultCoordinates: { latitude: 15.777736, longitude: 74.463428 }
+    defaultCoordinates: { latitude: 15.77795, longitude: 74.46275 }
   },
   'Kateel Canteen': {
     id: 'loc-kateel-canteen',
     name: 'Kateel Canteen',
-    defaultCoordinates: { latitude: 15.77747, longitude: 74.461761 }
+    defaultCoordinates: { latitude: 15.778009, longitude: 74.462694 }
   },
   'Vidya Bhavan': {
     id: 'loc-vidya-bhavan',
     name: 'Vidya Bhavan',
-    defaultCoordinates: { latitude: 15.777818, longitude: 74.465171 }
+    defaultCoordinates: { latitude: 15.777215, longitude: 74.463901 }
   }
 };
 

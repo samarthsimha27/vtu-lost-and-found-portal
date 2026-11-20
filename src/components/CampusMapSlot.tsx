@@ -40,7 +40,7 @@ const BUILDING_DESCRIPTIONS: Partial<Record<CampusLocation, string>> = {
 export const CampusMapSlot: React.FC<CampusMapSlotProps> = ({
   markers,
   locations,
-  center = { latitude: 15.7785, longitude: 74.463 },
+  center = { latitude: 15.7775, longitude: 74.465 },
   zoom = 17,
   onSelectItem,
   onSelectLocation
@@ -179,14 +179,14 @@ export const CampusMapSlot: React.FC<CampusMapSlotProps> = ({
       popupAnchor: [0, -14]
     });
 
-    const gateMarker = L.marker([15.779815, 74.463841], { icon: gateIcon });
+    const gateMarker = L.marker([15.778153, 74.463913], { icon: gateIcon });
     gateMarker.bindPopup(`
       <div style="font-family: inherit; padding: 4px;">
         <div style="font-size: 10px; font-weight: 700; color: #B45309; text-transform: uppercase;">Campus Entrance</div>
-        <div style="font-size: 13px; font-weight: 700; color: #191816; margin-top: 2px;">Sir M. Visvesvaraya Circle & Main Gate</div>
-        <div style="font-size: 11px; color: #625D55; margin-top: 2px;">GPS: 15.7798° N, 74.4638° E</div>
+        <div style="font-size: 13px; font-weight: 700; color: #191816; margin-top: 2px;">Main Campus Junction & Circle</div>
+        <div style="font-size: 11px; color: #625D55; margin-top: 2px;">GPS: 15.7782° N, 74.4639° E</div>
         <p style="font-size: 11px; color: #374151; margin-top: 4px; line-height: 1.3;">
-          Official entrance to VTU Jnana Sangama Campus facing Jamboti / Machhe Highway.
+          Primary arrival junction into VTU Jnana Sangama Campus connecting Admin, Library and Hostels.
         </p>
       </div>
     `);
